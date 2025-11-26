@@ -2,7 +2,8 @@
 """Вспомогательные функции для работы с файлами."""
 import json
 import os
-from .constants import DB_META_PATH, DATA_DIR
+
+from .constants import DATA_DIR, DB_META_PATH
 
 
 def load_metadata(filepath=DB_META_PATH):

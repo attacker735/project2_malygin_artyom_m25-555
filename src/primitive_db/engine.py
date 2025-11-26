@@ -1,10 +1,31 @@
 #!/usr/bin/env python3
 """Движок базы данных - основной цикл и парсинг команд."""
 import shlex
-from .utils import load_metadata, save_metadata, ensure_data_dir, load_table_data, save_table_data
-from .core import create_table, drop_table, list_tables, insert, select, update, delete, get_table_info
-from .parser import parse_where_condition, parse_set_clause, parse_insert_values, get_expected_types
+
 from .constants import CRUD_HELP_MESSAGE, ERROR_MESSAGES
+from .core import (
+    create_table,
+    delete,
+    drop_table,
+    get_table_info,
+    insert,
+    list_tables,
+    select,
+    update,
+)
+from .parser import (
+    get_expected_types,
+    parse_insert_values,
+    parse_set_clause,
+    parse_where_condition,
+)
+from .utils import (
+    ensure_data_dir,
+    load_metadata,
+    load_table_data,
+    save_metadata,
+    save_table_data,
+)
 
 
 def print_help():

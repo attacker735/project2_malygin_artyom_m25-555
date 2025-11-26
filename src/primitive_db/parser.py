@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Парсер для условий WHERE и SET."""
-import shlex
 import re
+import shlex
 
 
 def parse_where_condition(condition_str):

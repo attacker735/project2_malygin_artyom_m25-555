@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Основная логика работы с таблицами и данными."""
 from prettytable import PrettyTable
-from .constants import SUPPORTED_TYPES, AUTO_ID_COLUMN, ERROR_MESSAGES
+
+from .constants import AUTO_ID_COLUMN, ERROR_MESSAGES, SUPPORTED_TYPES
 
 
 def create_table(metadata, table_name, columns):
