@@ -3,14 +3,26 @@
 import shlex
 from .utils import load_metadata, save_metadata, ensure_data_dir
 from .core import create_table, drop_table, list_tables
-from .constants import HELP_MESSAGE, ERROR_MESSAGES
+from .constants import ERROR_MESSAGES
+
+
+def print_help():
+    """Prints the help message for the current mode."""
+    print("\n***Процесс работы с таблицей***")
+    print("Функции:")
+    print("<command> create_table <имя_таблицы> <столбец1:тип> .. - создать таблицу")
+    print("<command> list_tables - показать список всех таблиц")
+    print("<command> drop_table <имя_таблицы> - удалить таблицу")
+    
+    print("\nОбщие команды:")
+    print("<command> exit - выход из программы")
+    print("<command> help - справочная информация\n")
 
 
 def run():
     """Основной цикл программы."""
     ensure_data_dir()
-    print("***База данных***")
-    print(HELP_MESSAGE)
+    print_help()
     
     while True:
         try:
@@ -18,12 +30,12 @@ def run():
             if not user_input:
                 continue
                 
-            # Разбиваем команду на части с учетом кавычек
+            
             parts = shlex.split(user_input)
             command = parts[0].lower()
             args = parts[1:]
             
-            # Загружаем актуальные метаданные
+            
             metadata = load_metadata()
             
             if command == "exit":
@@ -31,7 +43,7 @@ def run():
                 break
                 
             elif command == "help":
-                print(HELP_MESSAGE)
+                print_help()
                 
             elif command == "create_table":
                 if len(args) < 2:
@@ -59,7 +71,7 @@ def run():
                     
             elif command == "list_tables":
                 result = list_tables(metadata)
-                print(result)
+                print(result)  
                 
             else:
                 print(ERROR_MESSAGES["unknown_command"].format(command))

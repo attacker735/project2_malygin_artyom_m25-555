@@ -11,18 +11,7 @@ SUPPORTED_TYPES = {"int", "str", "bool"}
 # Автоматические колонки
 AUTO_ID_COLUMN = "ID:int"
 
-# Сообщения
-HELP_MESSAGE = """
-***База данных***
-
-Функции:
-<command> create_table <имя_таблицы> <столбец1:тип> <столбец2:тип> .. - создать таблицу
-<command> list_tables - показать список всех таблиц
-<command> drop_table <имя_таблицы> - удалить таблицу
-<command> exit - выход из программы
-<command> help - справочная информация
-"""
-
+# Сообщения об ошибках
 ERROR_MESSAGES = {
     "table_exists": 'Ошибка: Таблица "{}" уже существует.',
     "table_not_exists": 'Ошибка: Таблица "{}" не существует.',
