@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "project2-malygin-artyom-m25-555"
+version = "0.1.0"
+description = "Primitive database project"
+authors = ["Artyom Malygin"]
+readme = "README.md"
+packages = [
+    { include = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+prompt-toolkit = "^3.0.0"
+prettytable = "^3.0.0"
+prompt = "^0.4.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.6"
+
+[tool.poetry.scripts]
+project = "src.primitive_db.main:main"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = ["venv", ".venv", "dist", "__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = []
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
