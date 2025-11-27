@@ -42,6 +42,18 @@ def save_table_data(table_name, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
+def delete_table_file(table_name):
+    """Удаляет файл данных таблицы."""
+    filepath = get_table_file_path(table_name)
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def ensure_data_dir():
     """Создает директорию для данных если не существует."""
     os.makedirs(DATA_DIR, exist_ok=True)

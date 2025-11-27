@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Основная логика работы с таблицами и данными."""
 from prettytable import PrettyTable
 
 from .constants import AUTO_ID_COLUMN, ERROR_MESSAGES, SUPPORTED_TYPES
+from .decorators import confirm_action, create_cacher, handle_db_errors, log_time
+
+cache_result = create_cacher()
 
 
+@handle_db_errors
 def create_table(metadata, table_name, columns):
     """Создает новую таблицу."""
     if table_name in metadata:
@@ -30,8 +33,9 @@ def create_table(metadata, table_name, columns):
     return True, success_message
 
 
+@handle_db_errors
+@confirm_action("удаление таблицы")
 def drop_table(metadata, table_name):
-    """Удаляет таблицу."""
     if table_name not in metadata:
         return False, ERROR_MESSAGES["table_not_exists"].format(table_name)
     
@@ -39,8 +43,8 @@ def drop_table(metadata, table_name):
     return True, f'Таблица "{table_name}" успешно удалена.'
 
 
+@handle_db_errors
 def list_tables(metadata):
-    """Возвращает список всех таблиц."""
     if not metadata:
         return "Нет созданных таблиц."
     
@@ -48,39 +52,9 @@ def list_tables(metadata):
     return tables
 
 
-def validate_column_format(column):
-    """Проверяет формат колонки (name:type)."""
-    if ':' not in column:
-        return False, None, None
-    
-    name, type_ = column.split(':', 1)
-    return True, name.strip(), type_.strip()
-
-
-def get_columns_without_id(metadata, table_name):
-    """Возвращает список колонок без ID."""
-    if table_name not in metadata:
-        return []
-    return [col for col in metadata[table_name] if not col.startswith("ID:")]
-
-
-def validate_data_types(columns, values):
-    """Проверяет соответствие типов данных."""
-    for col, val in zip(columns, values):
-        col_name, col_type = col.split(':')
-        
-        if col_type == 'int' and not isinstance(val, int):
-            return False, f'Ожидается int для столбца {col_name}, получено {type(val).__name__}'
-        elif col_type == 'bool' and not isinstance(val, bool):
-            return False, f'Ожидается bool для столбца {col_name}, получено {type(val).__name__}'
-        elif col_type == 'str' and not isinstance(val, str):
-            return False, f'Ожидается str для столбца {col_name}, получено {type(val).__name__}'
-    
-    return True, None
-
-
+@handle_db_errors
+@log_time
 def insert(metadata, table_name, values):
-    """Добавляет новую запись в таблицу."""
     if table_name not in metadata:
         return False, ERROR_MESSAGES["table_not_exists"].format(table_name)
     
@@ -89,7 +63,6 @@ def insert(metadata, table_name, values):
     if len(values) != len(columns_without_id):
         return False, ERROR_MESSAGES["invalid_insert"]
     
-    # Проверяем типы данных
     is_valid, error_msg = validate_data_types(columns_without_id, values)
     if not is_valid:
         return False, error_msg
@@ -97,42 +70,46 @@ def insert(metadata, table_name, values):
     return True, "Запись успешно добавлена"
 
 
+@handle_db_errors
+@log_time
 def select(metadata, table_data, where_clause=None):
-    """Выбирает записи из таблицы."""
-    if not table_data:
-        return ERROR_MESSAGES["no_records"]
+    cache_key = f"select_{id(metadata)}_{str(where_clause)}"
     
-    # Фильтруем данные если есть условие WHERE
-    filtered_data = table_data
-    if where_clause:
-        filtered_data = []
-        for record in table_data:
-            match = True
-            for col, val in where_clause.items():
-                if record.get(col) != val:
-                    match = False
-                    break
-            if match:
-                filtered_data.append(record)
+    def _execute_select():
+        if not table_data:
+            return ERROR_MESSAGES["no_records"]
+        
+        filtered_data = table_data
+        if where_clause:
+            filtered_data = []
+            for record in table_data:
+                match = True
+                for col, val in where_clause.items():
+                    if record.get(col) != val:
+                        match = False
+                        break
+                if match:
+                    filtered_data.append(record)
+        
+        if not filtered_data:
+            return ERROR_MESSAGES["no_records"]
+        
+        table = PrettyTable()
+        if metadata:
+            table_name = list(metadata.keys())[0]
+            table.field_names = [col.split(':')[0] for col in metadata[table_name]]
+        
+        for record in filtered_data:
+            row = [record.get(col.split(':')[0], '') for col in metadata[table_name]]
+            table.add_row(row)
+        
+        return table
     
-    if not filtered_data:
-        return ERROR_MESSAGES["no_records"]
-    
-    # Создаем красивую таблицу для вывода
-    table = PrettyTable()
-    if metadata:
-        table_name = list(metadata.keys())[0]
-        table.field_names = [col.split(':')[0] for col in metadata[table_name]]
-    
-    for record in filtered_data:
-        row = [record.get(col.split(':')[0], '') for col in metadata[table_name]]
-        table.add_row(row)
-    
-    return table
+    return cache_result(cache_key, _execute_select)
 
 
+@handle_db_errors
 def update(table_data, set_clause, where_clause):
-    """Обновляет записи в таблице."""
     updated_count = 0
     
     for record in table_data:
@@ -153,8 +130,9 @@ def update(table_data, set_clause, where_clause):
     return table_data, updated_count
 
 
+@handle_db_errors
+@confirm_action("удаление записей")
 def delete(table_data, where_clause):
-    """Удаляет записи из таблицы."""
     if not where_clause:
         return [], len(table_data)
     
@@ -176,8 +154,8 @@ def delete(table_data, where_clause):
     return remaining_data, deleted_count
 
 
+@handle_db_errors
 def get_table_info(metadata, table_name, table_data):
-    """Возвращает информацию о таблице."""
     if table_name not in metadata:
         return ERROR_MESSAGES["table_not_exists"].format(table_name)
     
@@ -187,3 +165,32 @@ def get_table_info(metadata, table_name, table_data):
     return f"""Таблица: {table_name}
 Столбцы: {columns_str}
 Количество записей: {record_count}"""
+
+
+# Вспомогательные функции (без декораторов)
+def validate_column_format(column):
+    if ':' not in column:
+        return False, None, None
+    
+    name, type_ = column.split(':', 1)
+    return True, name.strip(), type_.strip()
+
+
+def get_columns_without_id(metadata, table_name):
+    if table_name not in metadata:
+        return []
+    return [col for col in metadata[table_name] if not col.startswith("ID:")]
+
+
+def validate_data_types(columns, values):
+    for col, val in zip(columns, values):
+        col_name, col_type = col.split(':')
+        
+        if col_type == 'int' and not isinstance(val, int):
+            return False, f'Ожидается int для столбца {col_name}, получено {type(val).__name__}'
+        elif col_type == 'bool' and not isinstance(val, bool):
+            return False, f'Ожидается bool для столбца {col_name}, получено {type(val).__name__}'
+        elif col_type == 'str' and not isinstance(val, str):
+            return False, f'Ожидается str для столбца {col_name}, получено {type(val).__name__}'
+    
+    return True, None
