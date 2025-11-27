@@ -17,7 +17,8 @@ def load_metadata(filepath=DB_META_PATH):
 
 def save_metadata(data, filepath=DB_META_PATH):
     """Сохраняет метаданные в JSON-файл."""
-    os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+    dir_path = os.path.dirname(filepath) if os.path.dirname(filepath) else '.'
+    os.makedirs(dir_path, exist_ok=True)
     
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -36,7 +37,8 @@ def load_table_data(table_name):
 def save_table_data(table_name, data):
     """Сохраняет данные таблицы в JSON-файл."""
     filepath = get_table_file_path(table_name)
-    os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+    dir_path = os.path.dirname(filepath) if os.path.dirname(filepath) else '.'
+    os.makedirs(dir_path, exist_ok=True)
     
     with open(filepath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

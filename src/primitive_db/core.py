@@ -28,7 +28,10 @@ def create_table(metadata, table_name, columns):
     metadata[table_name] = final_columns
     
     columns_str = ", ".join(final_columns)
-    success_message = f'Таблица "{table_name}" успешно создана со столбцами: {columns_str}'
+    success_message = (
+        f'Таблица "{table_name}" успешно создана '
+        f'со столбцами: {columns_str}'
+    )
     
     return True, success_message
 
@@ -114,7 +117,6 @@ def update(table_data, set_clause, where_clause):
     
     for record in table_data:
         match = True
-        # Проверяем условие WHERE
         if where_clause:
             for col, val in where_clause.items():
                 if record.get(col) != val:
@@ -122,7 +124,6 @@ def update(table_data, set_clause, where_clause):
                     break
         
         if match:
-            # Обновляем поля согласно SET
             for col, val in set_clause.items():
                 record[col] = val
             updated_count += 1
@@ -187,10 +188,19 @@ def validate_data_types(columns, values):
         col_name, col_type = col.split(':')
         
         if col_type == 'int' and not isinstance(val, int):
-            return False, f'Ожидается int для столбца {col_name}, получено {type(val).__name__}'
+            return False, (
+            f'Ожидается int для столбца {col_name}, '
+            f'получено {type(val).__name__}'
+        )
         elif col_type == 'bool' and not isinstance(val, bool):
-            return False, f'Ожидается bool для столбца {col_name}, получено {type(val).__name__}'
+            return False, (
+            f'Ожидается bool для столбца {col_name}, '
+            f'получено {type(val).__name__}'
+        )
         elif col_type == 'str' and not isinstance(val, str):
-            return False, f'Ожидается str для столбца {col_name}, получено {type(val).__name__}'
+            return False, (
+            f'Ожидается str для столбца {col_name}, '
+            f'получено {type(val).__name__}'
+        )
     
     return True, None

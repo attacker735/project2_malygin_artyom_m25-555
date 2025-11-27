@@ -45,12 +45,10 @@ def run():
             if not user_input:
                 continue
                 
-            # Разбиваем команду на части с учетом кавычек
             parts = shlex.split(user_input)
             command = parts[0].lower()
             args = parts[1:]
             
-            # Загружаем актуальные метаданные
             metadata = load_metadata()
             
             if command == "exit":
@@ -62,7 +60,11 @@ def run():
                 
             elif command == "create_table":
                 if len(args) < 2:
-                    print("Ошибка: Недостаточно аргументов. Используйте: create_table <имя> <столбец1:тип> ...")
+                    msg = (
+                        "Ошибка: Недостаточно аргументов. Используйте: "
+                        "create_table <имя> <столбец1:тип> ..."
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[0]
@@ -72,21 +74,22 @@ def run():
                 print(message)
                 if success:
                     save_metadata(metadata)
-                    # Создаем пустой файл данных для новой таблицы
                     save_table_data(table_name, [])
                     
             elif command == "drop_table":
                 if len(args) != 1:
-                    print("Ошибка: Неверное количество аргументов. Используйте: drop_table <имя_таблицы>")
+                    msg = (
+                        "Ошибка: Неверное количество аргументов. "
+                        "Используйте: drop_table <имя_таблицы>"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[0]
-                # Здесь сработает декоратор confirm_action
                 success, message = drop_table(metadata, table_name)
                 print(message)
                 if success:
                     save_metadata(metadata)
-                    # Удаляем файл данных таблицы
                     delete_table_file(table_name)
                     
             elif command == "list_tables":
@@ -94,32 +97,37 @@ def run():
                 print(result)
                 
             elif command == "insert":
-                if len(args) < 4 or args[0].lower() != "into" or args[2].lower() != "values":
-                    print("Ошибка: Неверный формат команды. Используйте: insert into <таблица> values (<значения>)")
+                if (len(args) < 4 or args[0].lower() != "into" 
+                        or args[2].lower() != "values"):
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "insert into <таблица> values (<значения>)"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[1]
                 values_str = " ".join(args[3:])
                 
                 try:
-                    # Получаем ожидаемые типы данных
                     expected_types = get_expected_types(metadata, table_name)
                     values = parse_insert_values(values_str, expected_types)
                     
                     table_data = load_table_data(table_name)
-                    # Здесь сработает декоратор log_time
                     success, message = insert(metadata, table_name, values)
                     
                     if success:
-                        # Генерируем ID: находим максимальный ID и прибавляем 1
                         if table_data:
-                            # Находим максимальный ID среди существующих записей
                             max_id = max(record.get("ID", 0) for record in table_data)
                             new_id = max_id + 1
                         else:
                             new_id = 1
                             
-                        columns_without_id = [col.split(':')[0] for col in metadata[table_name] if not col.startswith("ID:")]
+                        columns_without_id = [
+                            col.split(':')[0] 
+                            for col in metadata[table_name] 
+                            if not col.startswith("ID:")
+                        ]
                         
                         new_record = {"ID": new_id}
                         for col, val in zip(columns_without_id, values):
@@ -127,7 +135,11 @@ def run():
                         
                         table_data.append(new_record)
                         save_table_data(table_name, table_data)
-                        print(f'Запись с ID={new_id} успешно добавлена в таблицу "{table_name}".')
+                        msg = (
+                            f'Запись с ID={new_id} успешно добавлена '
+                            f'в таблицу "{table_name}".'
+                        )
+                        print(msg)
                     else:
                         print(message)
                         
@@ -136,13 +148,16 @@ def run():
                     
             elif command == "select":
                 if len(args) < 2 or args[0].lower() != "from":
-                    print("Ошибка: Неверный формат команды. Используйте: select from <таблица> [where условие]")
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "select from <таблица> [where условие]"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[1]
                 where_condition = None
                 
-                # Парсим условие WHERE если есть
                 if len(args) > 3 and args[2].lower() == "where":
                     where_str = " ".join(args[3:])
                     try:
@@ -156,22 +171,27 @@ def run():
                     continue
                 
                 table_data = load_table_data(table_name)
-                # Здесь сработают декораторы log_time и кэширование
                 result = select(metadata, table_data, where_condition)
                 print(result)
                 
             elif command == "update":
-                # Улучшенный парсинг для команды update
                 if len(args) < 6:
-                    print("Ошибка: Неверный формат команды. Используйте: update <таблица> set <столбец=значение> where <условие>")
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "update <таблица> set <столбец=значение> where <условие>"
+                    )
+                    print(msg)
                     continue
                 
-                # Ищем индексы ключевых слов
                 try:
                     set_index = args.index("set")
                     where_index = args.index("where")
                 except ValueError:
-                    print("Ошибка: Неверный формат команды. Используйте: update <таблица> set <столбец=значение> where <условие>")
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "update <таблица> set <столбец=значение> where <условие>"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[0]
@@ -183,11 +203,17 @@ def run():
                     where_condition = parse_where_condition(where_str)
                     
                     table_data = load_table_data(table_name)
-                    updated_data, updated_count = update(table_data, set_clause, where_condition)
+                    updated_data, updated_count = update(
+                        table_data, set_clause, where_condition
+                    )
                     
                     if updated_count > 0:
                         save_table_data(table_name, updated_data)
-                        print(f'Обновлено {updated_count} записей в таблице "{table_name}".')
+                        msg = (
+                            f'Обновлено {updated_count} записей '
+                            f'в таблице "{table_name}".'
+                        )
+                        print(msg)
                     else:
                         print("Записи для обновления не найдены.")
                         
@@ -195,30 +221,41 @@ def run():
                     print(f"Ошибка: {e}")
                     
             elif command == "delete":
-                # Улучшенный парсинг для команды delete
                 if len(args) < 4 or args[0].lower() != "from":
-                    print("Ошибка: Неверный формат команды. Используйте: delete from <таблица> where <условие>")
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "delete from <таблица> where <условие>"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[1]
                 
-                # Ищем индекс "where"
                 try:
                     where_index = args.index("where")
                     where_str = " ".join(args[where_index+1:])
                 except ValueError:
-                    print("Ошибка: Неверный формат команды. Используйте: delete from <таблица> where <условие>")
+                    msg = (
+                        "Ошибка: Неверный формат команды. Используйте: "
+                        "delete from <таблица> where <условие>"
+                    )
+                    print(msg)
                     continue
                 
                 try:
                     where_condition = parse_where_condition(where_str)
                     table_data = load_table_data(table_name)
-                    # Здесь сработает декоратор confirm_action
-                    updated_data, deleted_count = delete(table_data, where_condition)
+                    updated_data, deleted_count = delete(
+                        table_data, where_condition
+                    )
                     
                     if deleted_count > 0:
                         save_table_data(table_name, updated_data)
-                        print(f'Удалено {deleted_count} записей из таблицы "{table_name}".')
+                        msg = (
+                            f'Удалено {deleted_count} записей '
+                            f'из таблицы "{table_name}".'
+                        )
+                        print(msg)
                     else:
                         print("Записи для удаления не найдены.")
                         
@@ -227,7 +264,11 @@ def run():
                     
             elif command == "info":
                 if len(args) != 1:
-                    print("Ошибка: Неверное количество аргументов. Используйте: info <имя_таблицы>")
+                    msg = (
+                        "Ошибка: Неверное количество аргументов. "
+                        "Используйте: info <имя_таблицы>"
+                    )
+                    print(msg)
                     continue
                 
                 table_name = args[0]
